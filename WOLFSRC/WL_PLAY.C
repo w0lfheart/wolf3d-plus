@@ -13,6 +13,8 @@
 */
 
 #define sc_Question	0x35
+#define sc_Minus	0x0C
+#define sc_Equals	0x0D
 
 /*
 =============================================================================
@@ -830,7 +832,36 @@ void CheckKeys (void)
 		lasttimecount = TimeCount;
 		return;
 	}
-
+ //
+    // +/- to adjust view size ingame
+    //
+ if (scan == sc_Minus)
+    {
+        if (viewsize > 4)
+        {
+            viewsize--;
+            ClearMemory ();
+            SetViewSize(viewsize * 16, viewsize * 16 * HEIGHTRATIO);
+            PM_CheckMainMem ();
+            DrawAllPlayBorder ();
+        }
+        IN_ClearKeysDown();
+        return;
+    }
+    
+    if (scan == sc_Equals)
+    {
+        if (viewsize < 20)
+        {
+            viewsize++;
+            ClearMemory ();
+            SetViewSize(viewsize * 16, viewsize * 16 * HEIGHTRATIO);
+            PM_CheckMainMem ();
+            DrawAllPlayBorder ();
+        }
+        IN_ClearKeysDown();
+        return;
+    }
 }
 
 

@@ -11,19 +11,19 @@ A WIP vanilla+ version of Wolfenstein 3D.
 - A/D strafing
 - Mouse Y-axis toggle
 - Increase max view size (can now play borderless)
+- Adjust view size in game with -+
 
 ### Working on
 
-- Reworked menu system
 - Code cleanup
-- Adjust view size in game with -+
+- Reworked menu system
+- Alt control mappings
 
 ### ToDo
 
 - Automap
 - Improve collision detection for pickups
 - Rewrite DOS sound code (resolve SFX clipping)
-- Alt control mappings
 - Increase max view size further w/ minimal and no hud options
 
 ### Maybe Eventually

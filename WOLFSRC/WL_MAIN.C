@@ -1,9 +1,11 @@
 // WL_MAIN.C
 
 #include <conio.h>
+#include <fcntl.h> 
+#include <io.h>
 #include "WL_DEF.H"
 #pragma hdrstop
-
+memptr	LOGO = NULL;
 
 /*
 =============================================================================
@@ -738,6 +740,15 @@ void SignonScreen (void)                        // VGA version
 		VL_MungePic (&introscn,320,200);
 		VL_MemToScreen (&introscn,320,200,0,0);
 		VW_SetScreen(0,0);
+
+		// Captures the signon screen for redrawing the Wolf3D logo on the main menu.
+		if (!signonbuffer)
+    	{
+    		MM_GetPtr(&signonbuffer,64000);
+    		_fmemcpy((unsigned char far *)signonbuffer,
+    			(unsigned char far *)&introscn,64000);
+    	}
+		
 	}
 
 //
@@ -1153,7 +1164,16 @@ void InitGame (void)
 		virtualreality = false;
 
 	MM_Startup ();                  // so the signon screen can be freed
-
+{
+        int handle, bytes;
+        MM_GetPtr(&LOGO, 10560);
+    	handle = open("LOGO.BIN", O_RDONLY | O_BINARY);
+    	if (handle != -1)
+    	{
+        	_dos_read(handle, LOGO, 10560, &bytes);
+        	close(handle);
+    	}
+    }
 	SignonScreen ();
 
 	VW_Startup ();

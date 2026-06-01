@@ -64,7 +64,7 @@
 #define CTL_X	24
 #define CTL_Y	70
 #define CTL_W	284
-#define CTL_H	13*7-7
+#define CTL_H	13*4-7
 
 #define LSM_X	85
 #define LSM_Y	55
@@ -114,9 +114,8 @@ void SetupControlPanel(void);
 void CleanupControlPanel(void);
 
 void DrawMenu(CP_iteminfo *item_i,CP_itemtype far *items);
-int  HandleMenu(CP_iteminfo *item_i,
-		CP_itemtype far *items,
-		void (*routine)(int w));
+int  HandleMenu(CP_iteminfo *item_i,CP_itemtype far *items,
+void (*routine)(int w));
 void ClearMScreen(void);
 void DrawWindow(int x,int y,int w,int h,int wcolor);
 void DrawOutline(int x,int y,int w,int h,int color1,int color2);
@@ -183,8 +182,11 @@ int  CP_EndGame(void);
 int  CP_CheckQuick(unsigned scancode);
 void CustomControls(void);
 void MouseSensitivity(void);
-
+void GamePadOptions(void);
+void DrawGamePadScreen(void);
 void CheckForEpisodes(void);
+extern CP_iteminfo GamePadItems;
+extern CP_itemtype far GamePadMenu[];
 
 //
 // VARIABLES
@@ -227,5 +229,4 @@ extern LRstruct LevelRatios[];
 void Write (int x,int y,char *string);
 void NonShareware(void);
 int GetYorN(int x,int y,int pic);
-
 

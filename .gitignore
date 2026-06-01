@@ -39,3 +39,15 @@ WOLFSRC/OBJ/SOD.MAP
 WOLFSRC/OBJ/SOD.EXE
 WOLFSRC/WL_AGENT copy.C
 WOLFSRC/WL_PLAY copy.C
+WOLFSRC/WL_MENU copy.C
+logo.bmp
+logo.ppm
+logo.xcf
+mainlogo.png
+MENU.BMP
+MENU.xcf
+MENU2.BMP
+wl6_pics.txt
+wolf3d.act
+WOLFSRC/LOGO.BIN
+WOLFSRC/OBJ/LOGO.OBJ

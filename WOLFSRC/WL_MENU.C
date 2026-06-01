@@ -53,10 +53,11 @@ CP_iteminfo
 	MainItems={MENU_X,MENU_Y,10,STARTITEM,24},
 	SndItems={SM_X,SM_Y1,12,0,52},
 	LSItems={LSM_X,LSM_Y,10,0,24},
-	CtlItems={CTL_X,CTL_Y,6,-1,56},
+	CtlItems={CTL_X,CTL_Y,3,-1,56},
 	CusItems={8,CST_Y+13*2,9,-1,0},
 	NewEitems={NE_X,NE_Y,11,0,88},
-	NewItems={NM_X,NM_Y,4,2,24};
+	NewItems={NM_X,NM_Y,4,2,24},
+	GamePadItems={CTL_X,CTL_Y,3,-1,56};
 
 #pragma warn -sus
 CP_itemtype far
@@ -141,15 +142,19 @@ far CtlMenu[]=
 	{0,"",MouseSensitivity},
 	{1,"",CustomControls}
 #else
-	{0,STR_MOUSEEN,0},
-	{0,STR_JOYEN,0},
-	{0,STR_PORT2,0},
-	{0,STR_GAMEPAD,0},
-	{0,STR_SENS,MouseSensitivity},
-	{1,STR_CUSTOM,CustomControls}
+    {0,STR_SENS,MouseSensitivity},
+    {1,STR_CUSTOM,CustomControls},
+	{0,STR_GAMEPADOPT,GamePadOptions}
 #endif
-},
 
+    
+},
+far GamePadMenu[] =
+    {
+    	{0,STR_JOYEN,0},
+    	{0,STR_PORT2,0},
+    	{0,STR_GAMEPAD,0}
+    },
 #pragma warn +sus
 
 #ifndef SPEAR
@@ -531,6 +536,41 @@ void US_ControlPanel(byte scancode)
 #endif
 }
 
+memptr	signonbuffer = NULL;
+void DrawFromBuffer (void)
+{
+	if (signonbuffer)
+    	{
+    		VL_SetPalette(&gamepal);
+    
+    		// Planar layout: [plane0: 16000 bytes][plane1][plane2][plane3]
+    		// Each plane: rows × 80 bytes (320/4)
+    		{
+    			memptr cropbuf;
+    			byte far *src = (byte far *)signonbuffer;
+    			byte far *dst;
+    			int row, plane;
+    
+    			MM_GetPtr(&cropbuf, 4 * 50 * 40);
+    			dst = (byte far *)cropbuf;
+    
+    			for (plane = 0; plane < 4; plane++)
+    			{
+    				byte far *plane_src = src + plane * 16000;
+    				for (row = 0; row < 50; row++)
+    				{
+    					_fmemcpy(dst,
+    						plane_src + row * 80 + 20,	// 20 = 80/4, skip x=80
+    						40);							// 40 = 160/4
+    					dst += 40;
+    				}
+    			}
+    
+    			VL_MemToScreen(cropbuf, 160, 50, 80, -20);
+    			MM_FreePtr(&cropbuf);
+    		}
+    	}
+}
 
 ////////////////////////
 //
@@ -542,11 +582,11 @@ void DrawMainMenu(void)
 	CA_CacheScreen(S_OPTIONSPIC);
 #else
 	ClearMScreen();
-
-	VWB_DrawPic(112,184,C_MOUSELBACKPIC);
+	//VWB_DrawPic(112,184,C_MOUSELBACKPIC);
 	DrawStripes(10);
-	VWB_DrawPic(84,0,C_OPTIONSPIC);
-
+	//VWB_DrawPic(84,0,C_OPTIONSPIC);P
+	//DrawFromBuffer();
+ 
 	#ifdef SPANISH
 	DrawWindow(MENU_X-8,MENU_Y-3,MENU_W+8,MENU_H,BKGDCOLOR);
 	#else
@@ -616,27 +656,30 @@ void CP_ReadThis(void)
 #endif
 #endif
 
-#if defined(SPEAR) || defined(GOODTIMES)
+#ifndef SPEAR
+#ifndef GOODTIMES
+#else
 ////////////////////////////////////////////////////////////////////
 //
 // BOSS KEY
 //
 ////////////////////////////////////////////////////////////////////
 void BossKey(void)
-    {
-        SD_MusicOff();
-        _AX = 3;
-        geninterrupt(0x10);
-        printf("C>");
-        while (!Keyboard[sc_Escape])
-            IN_ClearKeysDown();
-    
-        SD_MusicOn();
-        VL_SetVGAPlaneMode ();
-        VL_TestPaletteSet ();
-        VL_SetPalette (&gamepal);
-        LoadLatchMem();
+{
+	SD_MusicOff();
+	_AX = 3;
+	geninterrupt(0x10);
+	printf("C>");
+	while (!Keyboard[sc_Escape])
+	IN_ClearKeysDown();
+
+	SD_MusicOn();
+	VL_SetVGAPlaneMode ();
+	VL_TestPaletteSet ();
+	VL_SetPalette (&gamepal);
+	LoadLatchMem();
 }
+#endif
 #endif
 
 ////////////////////////////////////////////////////////////////////
@@ -1758,7 +1801,7 @@ int CalibrateJoystick(void)
 void CP_Control(void)
 {
 	#define CTL_SPC	70
-	enum {MOUSEENABLE,JOYENABLE,USEPORT2,PADENABLE,MOUSESENS,CUSTOMIZE};
+	enum {MOUSESENS,CUSTOMIZE,GAMEPADOPT};
 	int i,which;
 
 
@@ -1776,43 +1819,19 @@ void CP_Control(void)
 		which=HandleMenu(&CtlItems,&CtlMenu[0],NULL);
 		switch(which)
 		{
-			case MOUSEENABLE:
-				mouseenabled^=1;
-				_CX=_DX=CENTER;
-				Mouse(4);
-				DrawCtlScreen();
-				CusItems.curpos=-1;
-				ShootSnd();
-				break;
-
-			case JOYENABLE:
-				joystickenabled^=1;
-				if (joystickenabled)
-					if (!CalibrateJoystick())
-						joystickenabled = 0;
-				DrawCtlScreen();
-				CusItems.curpos=-1;
-				ShootSnd();
-				break;
-
-			case USEPORT2:
-				joystickport^=1;
-				DrawCtlScreen();
-				ShootSnd();
-				break;
-
-			case PADENABLE:
-				joypadenabled^=1;
-				DrawCtlScreen();
-				ShootSnd();
-				break;
-
 			case MOUSESENS:
+
 			case CUSTOMIZE:
 				DrawCtlScreen();
 				MenuFadeIn();
 				WaitKeyUp();
 				break;
+
+			case GAMEPADOPT:
+    			DrawCtlScreen();
+    			MenuFadeIn();
+    			WaitKeyUp();
+    			break;
 		}
 	} while(which>=0);
 
@@ -1827,131 +1846,318 @@ void CP_Control(void)
 
 ////////////////////////////////
 //
-// DRAW MOUSE SENSITIVITY SCREEN
+// DRAW MOUSE OPTIONS SCREEN
 //
-void DrawMouseSens(void)
-{
-#ifdef JAPAN
-	CA_CacheScreen(S_MOUSESENSPIC);
-#else
-	ClearMScreen();
-	VWB_DrawPic(112,184,C_MOUSELBACKPIC);
-	#ifdef SPANISH
-	DrawWindow(10,80,300,43,BKGDCOLOR);
-	#else
-	DrawWindow(10,80,300,30,BKGDCOLOR);
-	#endif
-
-	WindowX=0;
-	WindowW=320;
-	PrintY=82;
-	SETFONTCOLOR(READCOLOR,BKGDCOLOR);
-	US_CPrint(STR_MOUSEADJ);
-
-	SETFONTCOLOR(TEXTCOLOR,BKGDCOLOR);
-	#ifdef SPANISH
-	PrintX=14;
-	PrintY=95+13;
-	US_Print(STR_SLOW);
-	PrintX=252;
-	US_Print(STR_FAST);
-	#else
-	PrintX=14;
-	PrintY=95;
-	US_Print(STR_SLOW);
-	PrintX=269;
-	US_Print(STR_FAST);
-	#endif
-#endif
-
-	VWB_Bar(60,97,200,10,TEXTCOLOR);
-	DrawOutline(60,97,200,10,0,HIGHLIGHT);
-	DrawOutline(60+20*mouseadjustment,97,20,10,0,READCOLOR);
-	VWB_Bar(61+20*mouseadjustment,98,19,9,READHCOLOR);
-
-	VW_UpdateScreen();
-	MenuFadeIn();
-}
-
-
-///////////////////////////
+  	#define MOUSEOPT_Y1	93	// Mouse Enabled
+    #define MOUSEOPT_Y2	106	// Sensitivity
+    #define MOUSEOPT_Y3	119	// Mouse Y-Axis toggle
+    
 //
-// ADJUST MOUSE SENSITIVITY
+// DRAW THE SENSITIVITY BAR
 //
-void MouseSensitivity(void)
-{
-	ControlInfo ci;
-	int exit=0,oldMA;
+    void DrawMouseOptBar(void)
+    {
+        VWB_Bar(157,MOUSEOPT_Y2+2,140,7,TEXTCOLOR);
+        DrawOutline(157,MOUSEOPT_Y2+2,140,7,0,HIGHLIGHT);
+        DrawOutline(157+14*mouseadjustment,MOUSEOPT_Y2+2,14,7,0,READCOLOR);
+        VWB_Bar(158+14*mouseadjustment,MOUSEOPT_Y2+3,13,6,READHCOLOR);
+    }
+    
+    
+//
+// DRAW THE MOUSE OPTIONS SCREEN
+//
+ void DrawMouseOptions(void)
+        {
+        	ClearMScreen();
+        	VWB_DrawPic(112,184,C_MOUSELBACKPIC);
+        	DrawWindow(10,77,300,55,BKGDCOLOR);
+    		DrawStripes(10);
+    		VWB_DrawPic(80,0,C_CONTROLPIC);
+        
+        	WindowX=0;
+        	WindowW=320;
+        
+        	// Item 0: Mouse Enabled
+        	SETFONTCOLOR(TEXTCOLOR,BKGDCOLOR);
+        	PrintY=MOUSEOPT_Y1;
+        	PrintX=46;
+        	US_Print(STR_MOUSEEN);
+        
+        	// Checkbox
+        	if (mouseenabled)
+        		VWB_DrawPic(22,MOUSEOPT_Y1,C_SELECTEDPIC);
+        	else
+        		VWB_DrawPic(22,MOUSEOPT_Y1,C_NOTSELECTEDPIC);
+        
+        	// Item 1: Sensitivity
+        	PrintY=MOUSEOPT_Y2;
+        	SETFONTCOLOR(READCOLOR,BKGDCOLOR);
+        	PrintX=46;
+        	US_Print("Sensitivity:");
+        	SETFONTCOLOR(TEXTCOLOR,BKGDCOLOR);
+        	DrawMouseOptBar();
+        
+        	// Item 2: Mouse Y-Axis toggle
+        	PrintY=MOUSEOPT_Y3;
+        	PrintX=46;
+        	US_Print("Mouse Y-Axis: ");
+        	if (mousenovert)
+        		US_Print("OFF ");
+        	else
+        		US_Print("ON  ");
+        
+        	VW_UpdateScreen();
+        }
 
-
-	oldMA=mouseadjustment;
-	DrawMouseSens();
-	do
-	{
-		ReadAnyControl(&ci);
-		switch(ci.dir)
-		{
-			case dir_North:
-			case dir_West:
-				if (mouseadjustment)
-				{
-					mouseadjustment--;
-					VWB_Bar(60,97,200,10,TEXTCOLOR);
-					DrawOutline(60,97,200,10,0,HIGHLIGHT);
-					DrawOutline(60+20*mouseadjustment,97,20,10,0,READCOLOR);
-					VWB_Bar(61+20*mouseadjustment,98,19,9,READHCOLOR);
-					VW_UpdateScreen();
-					SD_PlaySound(MOVEGUN1SND);
-					while(Keyboard[sc_LeftArrow]);
-					WaitKeyUp();
-				}
-				break;
-
-			case dir_South:
-			case dir_East:
-				if (mouseadjustment<9)
-				{
-					mouseadjustment++;
-					VWB_Bar(60,97,200,10,TEXTCOLOR);
-					DrawOutline(60,97,200,10,0,HIGHLIGHT);
-					DrawOutline(60+20*mouseadjustment,97,20,10,0,READCOLOR);
-					VWB_Bar(61+20*mouseadjustment,98,19,9,READHCOLOR);
-					VW_UpdateScreen();
-					SD_PlaySound(MOVEGUN1SND);
-					while(Keyboard[sc_RightArrow]);
-					WaitKeyUp();
-				}
-				break;
-		}
-
-		#ifndef SPEAR
-		if (Keyboard[sc_Tab] && Keyboard[sc_P] && MS_CheckParm("goobers"))
-		#else
-		if (Keyboard[sc_Tab] && Keyboard[sc_P] && MS_CheckParm("debugmode"))
-		#endif
-			PicturePause();
-
-		if (ci.button0 || Keyboard[sc_Space] || Keyboard[sc_Enter])
-			exit=1;
-		else
-		if (ci.button1 || Keyboard[sc_Escape])
-			exit=2;
-
-	} while(!exit);
-
-	if (exit==2)
-	{
-		mouseadjustment=oldMA;
-		SD_PlaySound(ESCPRESSEDSND);
-	}
-	else
-		SD_PlaySound(SHOOTSND);
-
-	WaitKeyUp();
-	MenuFadeOut();
-}
-
-
+	void DrawMouseOptItem(int which, int hilight)
+        {
+        	int color = hilight ? HIGHLIGHT : TEXTCOLOR;
+        
+        	if (which == 0)
+        	{
+        		VWB_Bar(45,MOUSEOPT_Y1-1,260,13,BKGDCOLOR);
+        		SETFONTCOLOR(color,BKGDCOLOR);
+        		PrintY=MOUSEOPT_Y1;
+        		PrintX=46;
+        		US_Print(STR_MOUSEEN);
+        		if (mouseenabled)
+        			VWB_DrawPic(22,MOUSEOPT_Y1,C_SELECTEDPIC);
+        		else
+        			VWB_DrawPic(22,MOUSEOPT_Y1,C_NOTSELECTEDPIC);
+        	}
+        	else if (which == 1)
+        	{
+        		VWB_Bar(45,MOUSEOPT_Y2-1,260,13,BKGDCOLOR);
+        		SETFONTCOLOR(color,BKGDCOLOR);
+        		PrintY=MOUSEOPT_Y2;
+        		PrintX=46;
+        		US_Print("Sensitivity:");
+        		DrawMouseOptBar();
+        	}
+        	else if (which == 2)
+        	{
+        		VWB_Bar(45,MOUSEOPT_Y3-1,260,13,BKGDCOLOR);
+        		SETFONTCOLOR(color,BKGDCOLOR);
+        		PrintY=MOUSEOPT_Y3;
+        		PrintX=46;
+        		US_Print("Mouse Y-Axis: ");
+        		if (mousenovert)
+        			US_Print("OFF ");
+        		else
+        			US_Print("ON  ");
+        	}
+        }
+    
+    
+	
+//
+//   MOUSE OPTIONS MENU
+//
+         void MouseSensitivity(void)
+        {
+        	int which=0,shape=C_CURSOR1PIC,timer=8;
+        	int x,y,basey,oldwhich;
+        	ControlInfo ci;
+        
+        	DrawMouseOptions();
+        	DrawMouseOptItem(0,1);
+        	MenuFadeIn();
+        
+        	x=16;
+        	basey=MOUSEOPT_Y1-2;
+        	y=basey+which*13;
+        
+        	VWB_DrawPic(x,y,C_CURSOR1PIC);
+        	VW_UpdateScreen();
+        	IN_ClearKeysDown();
+        
+        	do
+        	{
+        		// Gun animation
+        		if (TimeCount>timer)
+        		{
+        			TimeCount=0;
+        			if (shape==C_CURSOR1PIC)
+        			{
+        				shape=C_CURSOR2PIC;
+        				timer=8;
+        			}
+        			else
+        			{
+        				shape=C_CURSOR1PIC;
+        				timer=70;
+        			}
+        			VWB_DrawPic(x,y,shape);
+        			VW_UpdateScreen();
+        		}
+        
+        		CheckPause();
+        		ReadAnyControl(&ci);
+        
+        		switch(ci.dir)
+        		{
+        			case dir_North:
+        				VWB_Bar(x-1,y,25,16,BKGDCOLOR);
+        				DrawMouseOptItem(0,0);
+        				DrawMouseOptItem(1,0);
+        				DrawMouseOptItem(2,0);
+        				DrawMouseOptBar();
+        
+        				// Half-step only when NOT wrapping
+        				if (which>0)
+        				{
+        					y-=6;
+        					VWB_DrawPic(x,y,C_CURSOR1PIC);
+        					VW_UpdateScreen();
+        					SD_PlaySound(MOVEGUN1SND);
+        					TimeCount=0;
+        					while(TimeCount<8);
+        					VWB_Bar(x-1,y,25,16,BKGDCOLOR);
+        				}
+        
+        				// Wrap if at top
+        				if (!which)
+        					which=2;
+        				else
+        					which--;
+        
+        				SD_PlaySound(MOVEGUN1SND);
+        				y=basey+which*13;
+        				VWB_DrawPic(x,y,shape);
+        				DrawMouseOptItem(0, which==0 ? 1 : 0);
+        				DrawMouseOptItem(1, which==1 ? 1 : 0);
+        				DrawMouseOptItem(2, which==2 ? 1 : 0);
+        				DrawMouseOptBar();
+        				VW_UpdateScreen();
+        				TicDelay(20);
+        				break;
+        
+        			case dir_South:
+        				VWB_Bar(x-1,y,25,16,BKGDCOLOR);
+        				DrawMouseOptItem(0,0);
+        				DrawMouseOptItem(1,0);
+        				DrawMouseOptItem(2,0);
+        				DrawMouseOptBar();
+        
+        				// Half-step only when NOT wrapping
+        				if (which<2)
+        				{
+        					y+=6;
+        					VWB_DrawPic(x,y,C_CURSOR1PIC);
+        					VW_UpdateScreen();
+        					SD_PlaySound(MOVEGUN1SND);
+        					TimeCount=0;
+        					while(TimeCount<8);
+        					VWB_Bar(x-1,y,25,16,BKGDCOLOR);
+        				}
+        
+        				// Wrap if at bottom
+        				if (which==2)
+        					which=0;
+        				else
+        					which++;
+        
+        				SD_PlaySound(MOVEGUN1SND);
+        				y=basey+which*13;
+        				VWB_DrawPic(x,y,shape);
+        				DrawMouseOptItem(0, which==0 ? 1 : 0);
+        				DrawMouseOptItem(1, which==1 ? 1 : 0);
+        				DrawMouseOptItem(2, which==2 ? 1 : 0);
+        				DrawMouseOptBar();
+        				VW_UpdateScreen();
+        				TicDelay(20);
+        				break;
+        
+        			case dir_West:
+        				if (which==0)
+        				{
+        					mouseenabled ^= 1;
+        					DrawMouseOptItem(0,1);
+        					VW_UpdateScreen();
+        					SD_PlaySound(MOVEGUN1SND);
+        					IN_ClearKeysDown();
+        					WaitKeyUp();
+        				}
+        				else if (which==1 && mouseadjustment>0)
+        				{
+        					mouseadjustment--;
+        					DrawMouseOptBar();
+        					VW_UpdateScreen();
+        					SD_PlaySound(MOVEGUN1SND);
+        					TicDelay(15);
+        				}
+        				else if (which==2)
+        				{
+        					mousenovert ^= 1;
+        					DrawMouseOptItem(2,1);
+        					VW_UpdateScreen();
+        					SD_PlaySound(MOVEGUN1SND);
+        					IN_ClearKeysDown();
+        					WaitKeyUp();
+        				}
+        				break;
+        
+        			case dir_East:
+        				if (which==0)
+        				{
+        					mouseenabled ^= 1;
+        					DrawMouseOptItem(0,1);
+        					VW_UpdateScreen();
+        					SD_PlaySound(MOVEGUN1SND);
+        					IN_ClearKeysDown();
+        					WaitKeyUp();
+        				}
+        				else if (which==1 && mouseadjustment<9)
+        				{
+        					mouseadjustment++;
+        					DrawMouseOptBar();
+        					VW_UpdateScreen();
+        					SD_PlaySound(MOVEGUN1SND);
+        					TicDelay(15);
+        				}
+        				else if (which==2)
+        				{
+        					mousenovert ^= 1;
+        					DrawMouseOptItem(2,1);
+        					VW_UpdateScreen();
+        					SD_PlaySound(MOVEGUN1SND);
+        					IN_ClearKeysDown();
+        					WaitKeyUp();
+        				}
+        				break;
+        		}
+        
+        		if (ci.button0 || Keyboard[sc_Space] || Keyboard[sc_Enter])
+        		{
+        			if (which==0)
+        			{
+        				mouseenabled ^= 1;
+        				DrawMouseOptItem(0,1);
+        				VW_UpdateScreen();
+        				ShootSnd();
+        				IN_ClearKeysDown();
+        				WaitKeyUp();
+        			}
+        			else if (which==2)
+        			{
+        				mousenovert ^= 1;
+        				DrawMouseOptItem(2,1);
+        				VW_UpdateScreen();
+        				ShootSnd();
+        				IN_ClearKeysDown();
+        				WaitKeyUp();
+        			}
+        		}
+        
+        		if (Keyboard[sc_Escape] || ci.button1)
+        			break;
+        
+        	} while(1);
+        
+        	MenuFadeOut();
+        }
+    
 ///////////////////////////
 //
 // DRAW CONTROL MENU SCREEN
@@ -1966,7 +2172,8 @@ void DrawCtlScreen(void)
 #else
  ClearMScreen();
  DrawStripes(10);
- VWB_DrawPic(80,0,C_CONTROLPIC);
+VWB_DrawPic(84,0,C_OPTIONSPIC);
+ //VWB_DrawPic(80,0,C_CONTROLPIC);
  VWB_DrawPic(112,184,C_MOUSELBACKPIC);
  DrawWindow(CTL_X-8,CTL_Y-5,CTL_W,CTL_H,BKGDCOLOR);
 #endif
@@ -1974,65 +2181,150 @@ void DrawCtlScreen(void)
  WindowW=320;
  SETFONTCOLOR(TEXTCOLOR,BKGDCOLOR);
 
- if (JoysPresent[0])
-   CtlMenu[1].active=
-   CtlMenu[2].active=
-   CtlMenu[3].active=1;
-
- CtlMenu[2].active=CtlMenu[3].active=joystickenabled;
-
- if (MousePresent)
- {
-  CtlMenu[4].active=
-  CtlMenu[0].active=1;
- }
-
- CtlMenu[4].active=mouseenabled;
-
-
- DrawMenu(&CtlItems,&CtlMenu[0]);
-
-
- x=CTL_X+CtlItems.indent-24;
- y=CTL_Y+3;
- if (mouseenabled)
-   VWB_DrawPic(x,y,C_SELECTEDPIC);
- else
-   VWB_DrawPic(x,y,C_NOTSELECTEDPIC);
-
- y=CTL_Y+16;
- if (joystickenabled)
-   VWB_DrawPic(x,y,C_SELECTEDPIC);
- else
-   VWB_DrawPic(x,y,C_NOTSELECTEDPIC);
-
- y=CTL_Y+29;
- if (joystickport)
-   VWB_DrawPic(x,y,C_SELECTEDPIC);
- else
-   VWB_DrawPic(x,y,C_NOTSELECTEDPIC);
-
- y=CTL_Y+42;
- if (joypadenabled)
-   VWB_DrawPic(x,y,C_SELECTEDPIC);
- else
-   VWB_DrawPic(x,y,C_NOTSELECTEDPIC);
-
- //
- // PICK FIRST AVAILABLE SPOT
- //
- if (CtlItems.curpos<0 || !CtlMenu[CtlItems.curpos].active)
-   for (i=0;i<6;i++)
-	 if (CtlMenu[i].active)
-	 {
-	  CtlItems.curpos=i;
-	  break;
-	 }
-
+CtlMenu[0].active=1;			// GamePad — always active
+CtlMenu[1].active=1;			// Sensitivity — always active
+CtlMenu[2].active=mouseenabled;	// Custom — depends on mouse enabled
+    
+    
+    DrawMenu(&CtlItems,&CtlMenu[0]);
+    
+    
+//
+// PICK FIRST AVAILABLE SPOT
+//
+	if (CtlItems.curpos<0 || !CtlMenu[CtlItems.curpos].active)
+       for (i=0;i<3;i++)
+     	if (CtlMenu[i].active)
+     	{
+     	 CtlItems.curpos=i;
+     	 break;
+     	}
+ 
  DrawMenuGun(&CtlItems);
  VW_UpdateScreen();
 }
 
+//==========================================================================
+    //
+    // GAMEPAD OPTIONS MENU
+    //
+    //==========================================================================
+    
+
+    
+    void DrawGamePadScreen(void)
+    {
+    	CP_iteminfo *item_i = &GamePadItems;
+    	CP_itemtype far *items = &GamePadMenu[0];
+    	int i;
+    
+    	ClearMScreen();
+    	DrawStripes(10);
+    	VWB_DrawPic(80,0,C_CONTROLPIC);
+    	VWB_DrawPic(112,184,C_MOUSELBACKPIC);
+    	DrawWindow(CTL_X-8,CTL_Y-5,CTL_W,CTL_H,BKGDCOLOR);
+    
+    	WindowX=0;
+    	WindowW=320;
+    	SETFONTCOLOR(TEXTCOLOR,BKGDCOLOR);
+    
+    	// Enforce joystick deps
+    	if (JoysPresent[0])
+		{
+    	GamePadMenu[0].active =
+    	GamePadMenu[1].active =
+    	GamePadMenu[2].active = 1;
+		}
+    	GamePadMenu[1].active = GamePadMenu[2].active = joystickenabled;
+
+		GamePadMenu[0].active =
+    	GamePadMenu[1].active =
+    	GamePadMenu[2].active = 1;
+		
+
+    
+    	DrawMenu(item_i,items);
+    
+    	// Draw checkboxes
+    	{
+    		int x = CTL_X + item_i->indent - 24;
+    		int y = CTL_Y + 3;
+    
+    		if (joystickenabled)
+    			VWB_DrawPic(x,y,C_SELECTEDPIC);
+    		else
+    			VWB_DrawPic(x,y,C_NOTSELECTEDPIC);
+    
+    		y = CTL_Y + 16;
+    		if (joystickport)
+    			VWB_DrawPic(x,y,C_SELECTEDPIC);
+    		else
+    			VWB_DrawPic(x,y,C_NOTSELECTEDPIC);
+    
+    		y = CTL_Y + 29;
+    		if (joypadenabled)
+    			VWB_DrawPic(x,y,C_SELECTEDPIC);
+    		else
+    			VWB_DrawPic(x,y,C_NOTSELECTEDPIC);
+    	}
+    
+    	// Pick first available
+    	if (item_i->curpos < 0)
+    		for (i = 0; i < 3; i++)
+    			if (items[i].active)
+    			{
+    				item_i->curpos = i;
+    				break;
+    			}
+    
+    	DrawMenuGun(item_i);
+    	VW_UpdateScreen();
+    }
+    
+//==========================================================================
+//
+// GAMEPAD OPTIONS
+//
+//==========================================================================
+    void GamePadOptions(void)
+    {
+    	enum {GP_JOYEN,GP_PORT2,GP_PADEN};
+    	int which;
+     	
+    	DrawGamePadScreen();
+		MenuFadeIn();
+    	WaitKeyUp();
+    
+    	do
+    	{
+    		which = HandleMenu(&GamePadItems,&GamePadMenu[0],NULL);
+    		switch(which)
+    		{
+    			case GP_JOYEN:
+    				joystickenabled ^= 1;
+    				if (joystickenabled)
+    					if (!CalibrateJoystick())
+    						joystickenabled = 0;
+    				DrawGamePadScreen();
+    				ShootSnd();
+    				break;
+    
+    			case GP_PORT2:
+    				joystickport ^= 1;
+    				DrawGamePadScreen();
+    				ShootSnd();
+    				break;
+    
+    			case GP_PADEN:
+    				joypadenabled ^= 1;
+    				DrawGamePadScreen();
+    				ShootSnd();
+    				break;
+    		}
+    	} while(which >= 0);
+    
+    	MenuFadeOut();
+    }
 
 ////////////////////////////////////////////////////////////////////
 //

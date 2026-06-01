@@ -15,7 +15,7 @@
 
 #define STR_NG	"New Game"
 #define	STR_SD	"Sound"
-#define	STR_CL	"Control"
+#define	STR_CL	"Options"
 #define	STR_LG	"Load Game"
 #define	STR_SG	"Save Game"
 #define	STR_CV	"Change View"
@@ -47,8 +47,9 @@
 #define	STR_JOYEN	"Joystick Enabled"
 #define	STR_PORT2	"Use joystick port 2"
 #define	STR_GAMEPAD	"Gravis GamePad Enabled"
-#define	STR_SENS	"Mouse Sensitivity"
-#define	STR_CUSTOM	"Customize controls"
+#define	STR_SENS	"Mouse Options"
+#define	STR_GAMEPADOPT	"GamePad Options"
+#define	STR_CUSTOM	"Keyboard Options"
 
 #define	STR_DADDY	"Can I play, Daddy?"
 #define	STR_HURTME	"Don't hurt me."
@@ -58,6 +59,7 @@
 #define	STR_MOUSEADJ	"Adjust Mouse Sensitivity"
 #define STR_SLOW	"Slow"
 #define STR_FAST	"Fast"
+#define	STR_MOUSEY	"Enable Mouse Y-Axis"
 
 #define	STR_CRUN	"Run"
 #define STR_COPEN	"Open"

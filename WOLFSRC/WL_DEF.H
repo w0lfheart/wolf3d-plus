@@ -45,6 +45,8 @@
 
 =============================================================================
 */
+extern	memptr		signonbuffer;
+extern	memptr		LOGO;
 
 #define MAXACTORS		150				// max number of nazis, etc / map
 #define MAXSTATS		400				// max number of lamps, bonus, etc
@@ -905,6 +907,9 @@ extern	int			viewsize;
 // curent user input
 //
 extern	int			controlx,controly;		// range from -100 to 100
+extern	int			strafex;			// dedicated strafe accumulator
+extern	int			strafescan[2];			// strafe left/right scan codes
+extern	boolean		mousenovert;			// disable mouse Y-axis
 extern	boolean		buttonstate[NUMBUTTONS];
 
 extern	boolean		demorecord,demoplayback;

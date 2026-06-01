@@ -50,11 +50,12 @@
 #define   STR_JOYEN   "Joystick activado"
 #define   STR_PORT2   "Use joystick puerto 2"
 #define   STR_GAMEPAD         "Gravis Gamepad Activada"
+#define   STR_GAMEPADOPT      "GamePad Opciones"
 #define   STR_SENS  "Raton Sensibilidad"
 #define   STR_CUSTOM     "Modificar controles"
 #define   STR_DADDY   "Papi puedo jugar?"
 #define   STR_HURTME   "No me hieras."
-#define   STR_BRINGEM    "­Echamelos!"
+#define   STR_BRINGEM    "ï¿½Echamelos!"
 #define   STR_DEATH "La muerte encarnada"
 
 #define   STR_MOUSEADJ  "Raton ajustar sensibilidad"

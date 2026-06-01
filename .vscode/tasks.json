@@ -1,0 +1,69 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build Wolf3D",
+            "type": "shell",
+            "command": "dosbox -conf ~/Documents/git/wolf3d-plus/.vscode/dosbox-build-wolf3d.conf",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new"
+            },
+            "problemMatcher": [
+                {
+                    "owner": "bcc",
+                    "fileLocation": [
+                        "relative",
+                        "${workspaceRoot}"
+                    ],
+                    "pattern": {
+                        "regexp": "^(Warning|Error) (.+) (\\d+): (.+)$",
+                        "severity": 1,
+                        "file": 2,
+                        "line": 3,
+                        "message": 4
+                    }
+                }
+            ]
+        },
+        {
+            "label": "Build Spear of Destiny",
+            "type": "shell",
+            "command": "dosbox -conf ~/Documents/git/wolf3d-plus/.vscode/dosbox-build-sod.conf",
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Test Wolf3D",
+            "type": "shell",
+            "command": "dosbox -conf ~/Documents/git/wolf3d-plus/.vscode/dosbox-test-wolf3d.conf",
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Test Spear of Destiny",
+            "type": "shell",
+            "command": "dosbox -conf ~/Documents/git/wolf3d-plus/.vscode/dosbox-test-sod.conf",
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        }
+    ]
+}

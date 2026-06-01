@@ -14,7 +14,6 @@
 
 #define MAXMOUSETURN	10
 
-
 #define MOVESCALE		150l
 #define BACKMOVESCALE	100l
 #define ANGLESCALE		20
@@ -27,13 +26,12 @@
 =============================================================================
 */
 
-
-
 //
 // player state info
 //
 boolean		running;
 long		thrustspeed;
+extern	int		strafex;
 
 unsigned	plux,pluy;			// player coordinates scaled to unsigned
 
@@ -158,46 +156,62 @@ void ControlMovement (objtype *ob)
 	oldx = player->x;
 	oldy = player->y;
 
+ //
+// side to side move — dedicated strafe from A/D keys
 //
-// side to side move
+    if (strafex)
+    {
+    	if (strafex > 0)
+    	{
+    		angle = ob->angle - ANGLES/4;
+    		if (angle < 0)
+    			angle += ANGLES; 
+    		Thrust (angle,strafex*MOVESCALE);	// strafe right
+    	}
+    	else
+    	{
+    		angle = ob->angle + ANGLES/4;
+    		if (angle >= ANGLES)
+    			angle -= ANGLES;
+    		Thrust (angle,-strafex*MOVESCALE);	// strafe left
+    	}
+    }
+    
 //
-	if (buttonstate[bt_strafe])
-	{
-	//
-	// strafing
-	//
-	//
-		if (controlx > 0)
-		{
-			angle = ob->angle - ANGLES/4;
-			if (angle < 0)
-				angle += ANGLES;
-			Thrust (angle,controlx*MOVESCALE);	// move to left
-		}
-		else if (controlx < 0)
-		{
-			angle = ob->angle + ANGLES/4;
-			if (angle >= ANGLES)
-				angle -= ANGLES;
-			Thrust (angle,-controlx*MOVESCALE);	// move to right
-		}
-	}
-	else
-	{
-	//
-	// not strafing
-	//
-		anglefrac += controlx;
-		angleunits = anglefrac/ANGLESCALE;
-		anglefrac -= angleunits*ANGLESCALE;
-		ob->angle -= angleunits;
-
-		if (ob->angle >= ANGLES)
-			ob->angle -= ANGLES;
-		if (ob->angle < 0)
-			ob->angle += ANGLES;
-
-	}
+// strafe modifier — Alt + arrows
+//
+    if (buttonstate[bt_strafe])
+    {
+    	if (controlx > 0)
+    	{
+    		angle = ob->angle - ANGLES/4;
+    		if (angle < 0)
+    			angle += ANGLES;
+    		Thrust (angle,controlx*MOVESCALE);	// strafe right
+    	}
+    	else if (controlx < 0)
+    	{
+    		angle = ob->angle + ANGLES/4;
+    		if (angle >= ANGLES)
+    			angle -= ANGLES;
+    		Thrust (angle,-controlx*MOVESCALE);	// strafe left
+    	}
+    }
+    else
+    {
+//
+// not strafing — turn
+//
+    	anglefrac += controlx;
+    	angleunits = anglefrac/ANGLESCALE;
+    	anglefrac -= angleunits*ANGLESCALE;
+    	ob->angle -= angleunits;
+    
+    	if (ob->angle >= ANGLES)
+    		ob->angle -= ANGLES;
+    	if (ob->angle < 0)
+    		ob->angle += ANGLES;
+}
 
 //
 // forward/backwards move

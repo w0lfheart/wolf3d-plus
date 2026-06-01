@@ -75,6 +75,9 @@ memptr		demobuffer;
 // curent user input
 //
 int			controlx,controly;		// range from -100 to 100 per tic
+int			strafex;			// dedicated strafe accumulator
+int			strafescan[2] = {sc_A, sc_D};	// strafe left/right keys
+boolean		mousenovert = true;		// disable mouse Y-axis
 boolean		buttonstate[NUMBUTTONS];
 
 
@@ -207,7 +210,7 @@ int songs[]=
  XFUNKIE_MUS,
  XDEATH_MUS,
  XGETYOU_MUS,		// DON'T KNOW
- ULTIMATE_MUS,	// Trans Gr”sse
+ ULTIMATE_MUS,	// Trans Grï¿½sse
 
  DUNGEON_MUS,
  GOINGAFT_MUS,
@@ -339,29 +342,23 @@ void PollJoystickButtons (void)
 */
 
 void PollKeyboardMove (void)
-{
-	if (buttonstate[bt_run])
-	{
-		if (Keyboard[dirscan[di_north]])
-			controly -= RUNMOVE*tics;
-		if (Keyboard[dirscan[di_south]])
-			controly += RUNMOVE*tics;
-		if (Keyboard[dirscan[di_west]])
-			controlx -= RUNMOVE*tics;
-		if (Keyboard[dirscan[di_east]])
-			controlx += RUNMOVE*tics;
-	}
-	else
-	{
-		if (Keyboard[dirscan[di_north]])
-			controly -= BASEMOVE*tics;
-		if (Keyboard[dirscan[di_south]])
-			controly += BASEMOVE*tics;
-		if (Keyboard[dirscan[di_west]])
-			controlx -= BASEMOVE*tics;
-		if (Keyboard[dirscan[di_east]])
-			controlx += BASEMOVE*tics;
-	}
+    {
+    	int base = buttonstate[bt_run] ? RUNMOVE : BASEMOVE;
+    
+    	if (Keyboard[dirscan[di_north]])
+    		controly -= base*tics;
+    	if (Keyboard[dirscan[di_south]])
+    		controly += base*tics;
+    	if (Keyboard[dirscan[di_west]])
+    		controlx -= base*tics;
+    	if (Keyboard[dirscan[di_east]])
+    		controlx += base*tics;
+    
+    	// Dedicated strafe keys â€” always strafe, no modifier needed
+    	if (Keyboard[strafescan[0]])
+    		strafex -= base*tics;
+    	if (Keyboard[strafescan[1]])
+    		strafex += base*tics;
 }
 
 
@@ -382,7 +379,8 @@ void PollMouseMove (void)
 	mouseymove = _DX;
 
 	controlx += mousexmove*10/(13-mouseadjustment);
-	controly += mouseymove*20/(13-mouseadjustment);
+	if (!mousenovert)
+    	controly += mouseymove*20/(13-mouseadjustment);
 }
 
 
@@ -482,9 +480,10 @@ void PollControls (void)
 	else
 		CalcTics ();
 
-	controlx = 0;
-	controly = 0;
-	memcpy (buttonheld,buttonstate,sizeof(buttonstate));
+    controlx = 0;
+    controly = 0;
+    strafex = 0;				// reset strafe accumulator
+    memcpy (buttonheld,buttonstate,sizeof(buttonstate));
 	memset (buttonstate,0,sizeof(buttonstate));
 
 	if (demoplayback)
